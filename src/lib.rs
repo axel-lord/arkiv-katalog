@@ -7,8 +7,10 @@ use ::color_eyre::{Report, Section, eyre::eyre};
 use ::derive_more::IsVariant;
 use ::hashbrown::HashMap;
 use ::iced::{
-    Alignment::Center,
-    Element, Subscription, Task, Theme,
+    Alignment::{self, Center},
+    Element,
+    Length::Fill,
+    Subscription, Task, Theme,
     keyboard::{Key, key::Named},
     widget, window,
 };
@@ -36,8 +38,6 @@ enum Message {
     AddWindow(window::Id, Window),
     /// Remove a window from application state.
     RemoveWindow(window::Id),
-    /// Request a window to be closed.
-    CloseWindow(window::Id),
     /// Set application theme.
     SetTheme(ThemeArg),
     /// Keyboard event.
@@ -106,6 +106,14 @@ impl State {
         self.main_theme()
     }
 
+    /// Get Application title.
+    fn title(&self, id: window::Id) -> String {
+        match self.windows.get(&id) {
+            Some(Window::Settings) => "Arkiv Katalog: Settings".to_owned(),
+            _ => "Arkiv Katalog".to_owned(),
+        }
+    }
+
     /// Get application subscriptions.
     fn subscription(&self) -> Subscription<Message> {
         let close_window = window::close_events().map(Message::RemoveWindow);
@@ -157,7 +165,6 @@ impl State {
                 },
                 _ => Task::none(),
             },
-            Message::CloseWindow(id) => window::close(id),
             Message::SaveSettings => {
                 if let Err(err) = self
                     .xdg_dirs
@@ -246,11 +253,9 @@ impl State {
                         .padding(5),
                 )
                 .push(widget::space::vertical())
-                .push(widget::rule::horizontal(2))
                 .push(
                     widget::Row::new()
                         .spacing(3)
-                        .push(widget::space::horizontal())
                         .push(
                             widget::button("Save")
                                 .padding(3)
@@ -258,16 +263,16 @@ impl State {
                                 .style(widget::button::success),
                         )
                         .push(
-                            widget::button("Reload")
+                            widget::button("Load")
                                 .padding(3)
                                 .on_press(Message::ReloadSettigns),
                         )
-                        .push(
-                            widget::button("Close")
-                                .padding(3)
-                                .on_press(Message::CloseWindow(id))
-                                .style(widget::button::danger),
-                        ),
+                        .pipe(widget::container)
+                        .style(widget::container::bordered_box)
+                        .padding(5)
+                        .pipe(widget::container)
+                        .width(Fill)
+                        .align_x(Alignment::End),
                 )
                 .into(),
         }

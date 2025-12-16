@@ -5,6 +5,14 @@ edition = "2024"
 authors = ["Axel Lord"]
 license = "MIT OR Apache-2.0"
 
+[features]
+default = ["wgpu", "wayland"]
+tiny-skia = ["iced/tiny-skia"]
+wgpu = ["iced/wgpu"]
+wayland = ["iced/wayland"]
+x11 = ["iced/x11"]
+
+
 [lints.rust]
 missing_docs = "warn"
 missing_debug_implementations = "warn"
@@ -34,7 +42,7 @@ color-eyre = "0.6.5"
 derive_more = { version = "2.1.0", features = ["is_variant"] }
 env_logger = "0.11.8"
 hashbrown = { version = "0.16.1", features = ["rayon", "serde"] }
-iced = "0.14.0"
+iced = { version = "0.14.0", default-features = false, features = ["crisp", "smol"] }
 log = "0.4.29"
 mimalloc = "0.1.48"
 rayon = "1.11.0"

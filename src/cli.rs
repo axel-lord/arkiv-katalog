@@ -46,10 +46,10 @@ impl Cli {
             State::update,
             State::view,
         )
+        .title(State::title)
         .theme(State::theme)
         .subscription(State::subscription)
         .run()
         .map_err(|err| eyre!(err))
     }
 }
-
