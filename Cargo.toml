@@ -12,6 +12,12 @@ wgpu = ["iced/wgpu"]
 wayland = ["iced/wayland"]
 x11 = ["iced/x11"]
 
+[profile.release]
+strip = "debuginfo"
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
 
 [lints.rust]
 missing_docs = "warn"
