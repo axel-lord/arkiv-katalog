@@ -1,0 +1,45 @@
+[package]
+name = "arkiv-katalog"
+version = "0.1.0"
+edition = "2024"
+authors = ["Axel Lord"]
+license = "MIT OR Apache-2.0"
+
+[lints.rust]
+missing_docs = "warn"
+missing_debug_implementations = "warn"
+
+[lints.clippy]
+allow_attributes = "warn"
+case_sensitive_file_extension_comparisons = "warn"
+dbg_macro = "warn"
+future_not_send = "warn"
+missing_const_for_fn = "warn"
+missing_docs_in_private_items = "warn"
+missing_errors_doc = "warn"
+missing_panics_doc = "warn"
+missing_safety_doc = "warn"
+print_stderr = "warn"
+print_stdout = "warn"
+std_instead_of_core = "warn"
+str_to_string = "warn"
+todo = "warn"
+unused_result_ok = "warn"
+
+[dependencies]
+bon = "3.8.1"
+clap = { version = "4.5.53", features = ["derive"] }
+clap_complete = "4.5.61"
+color-eyre = "0.6.5"
+derive_more = { version = "2.1.0", features = ["is_variant"] }
+env_logger = "0.11.8"
+hashbrown = { version = "0.16.1", features = ["rayon", "serde"] }
+iced = "0.14.0"
+log = "0.4.29"
+mimalloc = "0.1.48"
+rayon = "1.11.0"
+rustc-hash = "2.1.1"
+serde = { version = "1.0.228", features = ["derive"] }
+tap = "1.0.1"
+toml = "0.9.8"
+xdg = "3.0.0"
