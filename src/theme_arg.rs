@@ -17,6 +17,37 @@ impl ThemeArg {
     pub const fn is_default(&self) -> bool {
         matches!(self.0, Theme::Dark)
     }
+
+    /// Get the cyclic next variant.
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "panic should not happen, due to cyclic iterator"
+    )]
+    pub fn next_cyclic(self) -> Self {
+        Theme::ALL
+            .iter()
+            .cycle()
+            .skip_while(|theme| theme != &self.0)
+            .nth(1)
+            .map(Self)
+            .expect("cyclic iterator should always have values")
+    }
+
+    /// Get the cyclic prev variant.
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "panic should not happen, due to cyclic iterator"
+    )]
+    pub fn prev_cyclic(self) -> Self {
+        Theme::ALL
+            .iter()
+            .rev()
+            .cycle()
+            .skip_while(|theme| theme != &self.0)
+            .nth(1)
+            .map(Self)
+            .expect("cyclic iterator should always have values")
+    }
 }
 
 impl PartialEq for ThemeArg {

@@ -219,14 +219,20 @@ impl State {
                 }
             }
             Message::ThemeScroll(delta) => {
-                if let ScrollDelta::Pixels { y, .. } = delta {
-                    self.theme_scroll += y;
-                    let steps = self.theme_scroll.div_euclid(50.0);
-                    let rem = self.theme_scroll.rem_euclid(50.0);
-                    self.theme_scroll = rem;
-                    if steps != 0.0 {
-                        println!("{steps}, {rem}");
+                let steps = match delta {
+                    ScrollDelta::Lines { y, .. } => y,
+                    ScrollDelta::Pixels { y, .. } => {
+                        self.theme_scroll += y;
+                        let steps = self.theme_scroll.div_euclid(50.0);
+                        let rem = self.theme_scroll.rem_euclid(50.0);
+                        self.theme_scroll = rem;
+                        steps
                     }
+                };
+                if steps <= -1.0 {
+                    self.settings.theme = self.settings.theme.next_cyclic();
+                } else if steps >= 1.0 {
+                    self.settings.theme = self.settings.theme.prev_cyclic();
                 }
                 Task::none()
             }
