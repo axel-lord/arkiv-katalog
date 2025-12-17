@@ -10,8 +10,9 @@ use ::iced::{
     Alignment::{self, Center},
     Element,
     Length::Fill,
-    Subscription, Task, Theme,
+    Size, Subscription, Task, Theme,
     keyboard::{Key, key::Named},
+    mouse::ScrollDelta,
     widget, window,
 };
 use ::rustc_hash::FxBuildHasher;
@@ -40,6 +41,8 @@ enum Message {
     RemoveWindow(window::Id),
     /// Set application theme.
     SetTheme(ThemeArg),
+    /// Scroll theme.
+    ThemeScroll(ScrollDelta),
     /// Keyboard event.
     KeyEvent(::iced::keyboard::Event),
     /// Save settings.
@@ -72,6 +75,9 @@ struct State {
 
     /// Settings used by application.
     settings: Settings,
+
+    /// Scroll state of theme pick list.
+    theme_scroll: f32,
 }
 
 impl State {
@@ -155,7 +161,13 @@ impl State {
                             .collect::<Vec<_>>();
 
                         if to_close.is_empty() {
-                            let (_, task) = window::open(window::Settings::default());
+                            let (_, task) = window::open(window::Settings {
+                                size: Size {
+                                    width: 400.0,
+                                    height: 400.0,
+                                },
+                                ..window::Settings::default()
+                            });
                             task.map(|id| Message::AddWindow(id, Window::Settings))
                         } else {
                             Task::batch(to_close)
@@ -206,6 +218,18 @@ impl State {
                     }
                 }
             }
+            Message::ThemeScroll(delta) => {
+                if let ScrollDelta::Pixels { y, .. } = delta {
+                    self.theme_scroll += y;
+                    let steps = self.theme_scroll.div_euclid(50.0);
+                    let rem = self.theme_scroll.rem_euclid(50.0);
+                    self.theme_scroll = rem;
+                    if steps != 0.0 {
+                        println!("{steps}, {rem}");
+                    }
+                }
+                Task::none()
+            }
         }
     }
 
@@ -240,12 +264,15 @@ impl State {
                                 .spacing(3)
                                 .push("Theme")
                                 .push(
-                                    widget::pick_list(
-                                        ThemeArg::value_variants(),
-                                        Some(self.settings.theme),
-                                        Message::SetTheme,
+                                    widget::mouse_area(
+                                        widget::pick_list(
+                                            ThemeArg::value_variants(),
+                                            Some(self.settings.theme),
+                                            Message::SetTheme,
+                                        )
+                                        .padding(3),
                                     )
-                                    .padding(3),
+                                    .on_scroll(Message::ThemeScroll),
                                 ),
                         )
                         .pipe(widget::container)
