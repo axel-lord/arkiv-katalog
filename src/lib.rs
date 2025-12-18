@@ -21,6 +21,8 @@ use ::tap::Pipe;
 
 pub use self::{cli::Cli, theme_arg::ThemeArg};
 
+pub mod discrete_scroll;
+
 mod cli;
 mod theme_arg;
 
@@ -219,20 +221,14 @@ impl State {
                 }
             }
             Message::ThemeScroll(delta) => {
-                let steps = match delta {
-                    ScrollDelta::Lines { y, .. } => y,
-                    ScrollDelta::Pixels { y, .. } => {
-                        self.theme_scroll += y;
-                        let steps = self.theme_scroll.div_euclid(50.0);
-                        let rem = self.theme_scroll.rem_euclid(50.0);
-                        self.theme_scroll = rem;
-                        steps
+                match discrete_scroll::Vertical.discrete_scroll(delta, &mut self.theme_scroll) {
+                    discrete_scroll::Direction::Forwards => {
+                        self.settings.theme = self.settings.theme.next_cyclic()
                     }
-                };
-                if steps <= -1.0 {
-                    self.settings.theme = self.settings.theme.next_cyclic();
-                } else if steps >= 1.0 {
-                    self.settings.theme = self.settings.theme.prev_cyclic();
+                    discrete_scroll::Direction::Backwards => {
+                        self.settings.theme = self.settings.theme.prev_cyclic()
+                    }
+                    discrete_scroll::Direction::Stationary => {}
                 }
                 Task::none()
             }
