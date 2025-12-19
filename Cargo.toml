@@ -52,8 +52,10 @@ iced = { version = "0.14.0", default-features = false, features = ["crisp", "smo
 log = "0.4.29"
 mimalloc = "0.1.48"
 rayon = "1.11.0"
+rusqlite = "0.37.0"
 rustc-hash = "2.1.1"
 serde = { version = "1.0.228", features = ["derive"] }
 tap = "1.0.1"
 toml = "0.9.8"
 xdg = "3.0.0"
+zip = "6.0.0"
