@@ -50,6 +50,7 @@ derive_more = { version = "2.1.0", features = ["is_variant"] }
 env_logger = "0.11.8"
 hashbrown = { version = "0.16.1", features = ["rayon", "serde"] }
 iced = { version = "0.14.0", default-features = false, features = ["crisp", "smol"] }
+katalog-lib = { git = "https://github.com/axel-lord/katalog-lib" }
 log = "0.4.29"
 mimalloc = "0.1.48"
 rayon = "1.11.0"

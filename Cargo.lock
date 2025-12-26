@@ -180,6 +180,7 @@ dependencies = [
  "env_logger",
  "hashbrown 0.16.1",
  "iced",
+ "katalog-lib",
  "log",
  "mimalloc",
  "rayon",
@@ -1912,6 +1913,51 @@ dependencies = [
  "once_cell",
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "katalog-lib"
+version = "0.1.0"
+source = "git+https://github.com/axel-lord/katalog-lib#f25b13953a91fc99d8f5616cdff8e904a1db5917"
+dependencies = [
+ "katalog-lib-reflect",
+ "katalog-lib-traits",
+]
+
+[[package]]
+name = "katalog-lib-reflect"
+version = "0.1.0"
+source = "git+https://github.com/axel-lord/katalog-lib#f25b13953a91fc99d8f5616cdff8e904a1db5917"
+dependencies = [
+ "katalog-lib-reflect-derive",
+ "katalog-lib-traits",
+]
+
+[[package]]
+name = "katalog-lib-reflect-derive"
+version = "0.1.0"
+source = "git+https://github.com/axel-lord/katalog-lib#f25b13953a91fc99d8f5616cdff8e904a1db5917"
+dependencies = [
+ "katalog-lib-reflect-derive-lib",
+ "proc-macro2",
+ "syn",
+]
+
+[[package]]
+name = "katalog-lib-reflect-derive-lib"
+version = "0.0.0"
+source = "git+https://github.com/axel-lord/katalog-lib#f25b13953a91fc99d8f5616cdff8e904a1db5917"
+dependencies = [
+ "convert_case",
+ "proc-macro2",
+ "quote",
+ "rustc-hash 2.1.1",
+ "syn",
+]
+
+[[package]]
+name = "katalog-lib-traits"
+version = "0.1.0"
+source = "git+https://github.com/axel-lord/katalog-lib#f25b13953a91fc99d8f5616cdff8e904a1db5917"
 
 [[package]]
 name = "khronos-egl"
