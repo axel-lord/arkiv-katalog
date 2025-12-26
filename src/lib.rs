@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 
-use ::std::io::Write;
+use ::std::{io::Write, path::PathBuf};
 
 use ::clap::ValueEnum;
 use ::color_eyre::{Report, Section, eyre::eyre};
@@ -80,6 +80,11 @@ struct State {
 
     /// Scroll state of theme pick list.
     theme_scroll: f32,
+}
+
+/// Load archives in a directory.
+async fn load_dir(path: PathBuf) {
+
 }
 
 impl State {

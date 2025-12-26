@@ -1,5 +1,7 @@
 //! [Cli] impl.
 
+use ::std::path::PathBuf;
+
 use ::clap::Parser;
 use ::color_eyre::eyre::eyre;
 use ::iced::daemon;
@@ -20,6 +22,9 @@ pub struct Cli {
     /// Profile to use, separates cache, config and data based on profile.
     #[arg(long, short, default_value = "default")]
     pub profile: String,
+
+    /// Directory to load.
+    pub directory: Option<PathBuf>,
 }
 
 impl Cli {

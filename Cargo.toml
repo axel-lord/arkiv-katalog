@@ -42,6 +42,7 @@ unused_result_ok = "warn"
 
 [dependencies]
 bon = "3.8.1"
+bytes = { version = "1.11.0", features = ["serde"] }
 clap = { version = "4.5.53", features = ["derive"] }
 clap_complete = "4.5.61"
 color-eyre = "0.6.5"
@@ -55,6 +56,8 @@ rayon = "1.11.0"
 rusqlite = "0.37.0"
 rustc-hash = "2.1.1"
 serde = { version = "1.0.228", features = ["derive"] }
+serde_bytes = "0.11.19"
+smol = "2.0.2"
 tap = "1.0.1"
 toml = "0.9.8"
 xdg = "3.0.0"
