@@ -5,15 +5,16 @@ use ::std::path::PathBuf;
 use ::clap::Parser;
 use ::color_eyre::eyre::eyre;
 use ::iced::daemon;
+use ::katalog_lib::ThemeValueEnum;
 
-use crate::{Settings, State, theme_arg::ThemeArg};
+use crate::{Settings, State};
 
 /// Application to display a comic archive catalogue.
 #[derive(Debug, Default, Clone, Parser)]
 pub struct Cli {
     /// Theme to use for application.
     #[arg(long, short, value_enum)]
-    pub theme: Option<ThemeArg>,
+    pub theme: Option<ThemeValueEnum>,
 
     /// Application name used when querying xdg directories.
     #[arg(long, short, default_value = "arkiv-katalog")]

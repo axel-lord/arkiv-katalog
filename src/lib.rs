@@ -15,23 +15,21 @@ use ::iced::{
     mouse::ScrollDelta,
     widget, window,
 };
+use ::katalog_lib::{PartialVariants, ThemeValueEnum, discrete_scroll};
 use ::rustc_hash::FxBuildHasher;
 use ::serde::{Deserialize, Serialize};
 use ::tap::Pipe;
 
-pub use self::{cli::Cli, theme_arg::ThemeArg};
-
-pub mod discrete_scroll;
+pub use self::cli::Cli;
 
 mod cli;
-mod theme_arg;
 
 /// Application settings.
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Settings {
     /// Application theme to use.
     #[serde(default)]
-    pub theme: ThemeArg,
+    pub theme: ThemeValueEnum,
 }
 
 /// Application message.
@@ -42,7 +40,7 @@ enum Message {
     /// Remove a window from application state.
     RemoveWindow(window::Id),
     /// Set application theme.
-    SetTheme(ThemeArg),
+    SetTheme(ThemeValueEnum),
     /// Scroll theme.
     ThemeScroll(ScrollDelta),
     /// Keyboard event.
@@ -83,9 +81,7 @@ struct State {
 }
 
 /// Load archives in a directory.
-async fn load_dir(path: PathBuf) {
-
-}
+async fn load_dir(path: PathBuf) {}
 
 impl State {
     /// Initilize state.
@@ -228,10 +224,10 @@ impl State {
             Message::ThemeScroll(delta) => {
                 match discrete_scroll::Vertical.discrete_scroll(delta, &mut self.theme_scroll) {
                     discrete_scroll::Direction::Forwards => {
-                        self.settings.theme = self.settings.theme.next_cyclic()
+                        self.settings.theme = *self.settings.theme.partial_cycle_next();
                     }
                     discrete_scroll::Direction::Backwards => {
-                        self.settings.theme = self.settings.theme.prev_cyclic()
+                        self.settings.theme = *self.settings.theme.partial_cycle_prev();
                     }
                     discrete_scroll::Direction::Stationary => {}
                 }
@@ -273,7 +269,7 @@ impl State {
                                 .push(
                                     widget::mouse_area(
                                         widget::pick_list(
-                                            ThemeArg::value_variants(),
+                                            ThemeValueEnum::value_variants(),
                                             Some(self.settings.theme),
                                             Message::SetTheme,
                                         )
