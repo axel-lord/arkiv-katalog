@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 
-use ::std::{collections::BTreeMap, io::Write, path::Path, sync::Arc};
+use ::std::{borrow::Cow, collections::BTreeMap, io::Write, path::Path, sync::Arc};
 
 use ::color_eyre::{Report, Section, eyre::eyre};
 use ::derive_more::IsVariant;
@@ -15,6 +15,7 @@ use ::katalog_lib::{PartialVariants, ThemeValueEnum, discrete_scroll};
 use ::serde::{Deserialize, Serialize};
 use ::smol::stream::StreamExt;
 use ::tap::Pipe;
+use ::unicode_segmentation::UnicodeSegmentation;
 
 use crate::{pane::DirView, window_state::Window};
 
@@ -24,6 +25,21 @@ mod cli;
 mod pane;
 mod window_state;
 
+/// Shorten text such that it is at most max_len long.
+fn shorten_text(text: &str, max_len: usize) -> Cow<'_, str> {
+    fn inner(text: &str, max_len: usize) -> Option<String> {
+        let mut grapheme_indices = text.grapheme_indices(true);
+        let (end, _) = grapheme_indices.nth(max_len.saturating_sub(3))?;
+        _ = grapheme_indices.nth(3)?;
+        let text = text.get(..end)?;
+        let mut buf = String::with_capacity(end + 3);
+        buf.push_str(text);
+        buf.push_str("...");
+        Some(buf)
+    }
+    inner(text, max_len).map_or(Cow::Borrowed(text), Cow::Owned)
+}
+
 /// Application settings.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -32,14 +48,18 @@ pub struct Settings {
     pub theme: ThemeValueEnum,
 
     /// Card width to use.
-    pub card_width: f32,
+    pub card_width: u16,
+
+    /// Max width of card text.
+    pub max_card_text_width: u16,
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
             theme: Default::default(),
-            card_width: 150.0,
+            card_width: 150,
+            max_card_text_width: 12,
         }
     }
 }
@@ -191,7 +211,7 @@ impl State {
                             let path = Arc::from(entry.path());
                             Message::AddItem {
                                 item_path: ItemPath { view_path, path },
-                                item: pane::Item { name },
+                                item: pane::Item { name, cover: None },
                             }
                         }
                     })

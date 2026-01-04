@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="48"
+   height="48"
+   viewBox="0 0 12.7 12.7"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   sodipodi:docname="question.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#111111"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     inkscape:zoom="8.849231"
+     inkscape:cx="8.5883168"
+     inkscape:cy="35.144297"
+     inkscape:window-width="1906"
+     inkscape:window-height="1044"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <rect
+       x="0"
+       y="0"
+       width="48"
+       height="48"
+       id="rect2" />
+    <rect
+       x="0"
+       y="0"
+       width="48"
+       height="48"
+       id="rect1" />
+  </defs>
+  <g
+     inkscape:label="Text"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       id="rect3"
+       style="fill:#ff7f2a;stroke-width:2.11667;stroke-linejoin:round;stroke-dasharray:6.35, 2.11667"
+       d="M 1.9549195,9.5367431e-8 V 1.9735231 H 8.9513917 V 5.8001629 H 6.3500001 4.4663941 v 1.8541505 1.9430338 h 1.883606 V 7.6543134 H 10.745081 V 5.8001629 1.9735231 9.5367431e-8 H 8.9513917 Z M 4.4663941,10.614339 V 12.7 h 1.883606 v -2.085661 z"
+       inkscape:label="Question" />
+  </g>
+</svg>

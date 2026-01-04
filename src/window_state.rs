@@ -36,7 +36,9 @@ impl Window {
             Window::Main { panes } => widget::Column::new()
                 .push(widget::PaneGrid::new(panes, |pane, state, is_maximized| {
                     _ = (pane, is_maximized);
-                    pane_grid::Content::new(state.view(settings.card_width))
+                    pane_grid::Content::new(
+                        state.view(settings.card_width.into(), settings.max_card_text_width),
+                    )
                 }))
                 .push(
                     widget::Column::new()
