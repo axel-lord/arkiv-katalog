@@ -48,8 +48,10 @@ clap_complete = "4.5.61"
 color-eyre = "0.6.5"
 derive_more = { version = "2.1.0", features = ["is_variant"] }
 env_logger = "0.11.8"
+flume = "0.12.0"
+futures = "0.3.31"
 hashbrown = { version = "0.16.1", features = ["rayon", "serde"] }
-iced = { version = "0.14.0", default-features = false, features = ["crisp", "smol"] }
+iced = { version = "0.14.0", default-features = false, features = ["crisp", "smol", "image", "lazy"] }
 katalog-lib = { git = "https://github.com/axel-lord/katalog-lib" }
 log = "0.4.29"
 mimalloc = "0.1.48"

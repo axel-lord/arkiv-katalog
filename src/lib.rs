@@ -1,42 +1,76 @@
 #![doc = include_str!("../README.md")]
 
-use ::std::{io::Write, path::PathBuf};
+use ::std::{collections::BTreeMap, io::Write, path::Path, sync::Arc};
 
-use ::clap::ValueEnum;
 use ::color_eyre::{Report, Section, eyre::eyre};
 use ::derive_more::IsVariant;
-use ::hashbrown::HashMap;
 use ::iced::{
-    Alignment::{self, Center},
-    Element,
-    Length::Fill,
-    Size, Subscription, Task, Theme,
+    Element, Size, Subscription, Task, Theme,
     keyboard::{Key, key::Named},
     mouse::ScrollDelta,
-    widget, window,
+    widget::pane_grid,
+    window,
 };
 use ::katalog_lib::{PartialVariants, ThemeValueEnum, discrete_scroll};
-use ::rustc_hash::FxBuildHasher;
 use ::serde::{Deserialize, Serialize};
+use ::smol::stream::StreamExt;
 use ::tap::Pipe;
+
+use crate::{pane::DirView, window_state::Window};
 
 pub use self::cli::Cli;
 
 mod cli;
+mod pane;
+mod window_state;
 
 /// Application settings.
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Settings {
     /// Application theme to use.
-    #[serde(default)]
     pub theme: ThemeValueEnum,
+
+    /// Card width to use.
+    pub card_width: f32,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            theme: Default::default(),
+            card_width: 150.0,
+        }
+    }
+}
+
+/// Path to a [DirView].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ViewPath {
+    /// Window id of item.
+    pub window_id: window::Id,
+    /// Pane grid pane of item.
+    pub pane: pane_grid::Pane,
+}
+
+/// Path to an item.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ItemPath {
+    /// Path to [DirView] of item.
+    pub view_path: ViewPath,
+    /// Path of item.
+    pub path: Arc<Path>,
 }
 
 /// Application message.
 #[derive(Debug, Clone, IsVariant)]
 enum Message {
-    /// Add window id to state.
-    AddWindow(window::Id, Window),
+    /// Add window displaying given directory.
+    AddDirWindow(window::Id, Arc<Path>),
+    /// Add empty window.
+    AddEmptyWindow(window::Id),
+    /// Add settings window.
+    AddSettingsWindow(window::Id),
     /// Remove a window from application state.
     RemoveWindow(window::Id),
     /// Set application theme.
@@ -45,27 +79,24 @@ enum Message {
     ThemeScroll(ScrollDelta),
     /// Keyboard event.
     KeyEvent(::iced::keyboard::Event),
+    /// Add a directory item.
+    AddItem {
+        /// Path to add item at.
+        item_path: ItemPath,
+        /// Item to add.
+        item: pane::Item,
+    },
     /// Save settings.
     SaveSettings,
     /// Reload settings.
     ReloadSettigns,
 }
 
-/// Window kinds.
-#[derive(Debug, Clone, Default)]
-enum Window {
-    /// Window is a main window.
-    #[default]
-    Main,
-    /// Window is a settings window.
-    Settings,
-}
-
 /// Application state.
 #[derive(Debug, Default)]
 struct State {
     /// Application windows.
-    windows: HashMap<window::Id, Window, FxBuildHasher>,
+    windows: BTreeMap<window::Id, Window>,
 
     /// Cli arguments of application.
     cli: Cli,
@@ -80,9 +111,6 @@ struct State {
     theme_scroll: f32,
 }
 
-/// Load archives in a directory.
-async fn load_dir(path: PathBuf) {}
-
 impl State {
     /// Initilize state.
     fn init(
@@ -90,9 +118,8 @@ impl State {
         settings: Settings,
         xdg_dirs: ::xdg::BaseDirectories,
     ) -> impl Fn() -> (Self, Task<Message>) {
+        let dir_path = cli.directory.as_deref().map(Arc::<Path>::from);
         move || {
-            let (_, open_main) = window::open(window::Settings::default());
-
             (
                 Self {
                     cli: cli.clone(),
@@ -100,9 +127,76 @@ impl State {
                     settings: settings.clone(),
                     ..Self::default()
                 },
-                open_main.map(|id| Message::AddWindow(id, Window::Main)),
+                dir_path.as_ref().map_or_else(
+                    || {
+                        let (_, open_window) = window::open(window::Settings::default());
+                        open_window.map(Message::AddEmptyWindow)
+                    },
+                    |path| {
+                        let (_, open_window) = window::open(window::Settings::default());
+                        let path = Arc::clone(path);
+                        open_window.map(move |id| Message::AddDirWindow(id, Arc::clone(&path)))
+                    },
+                ),
             )
         }
+    }
+
+    /// Get a mutable reference to a directory view.
+    fn get_dir_view_mut(&mut self, view_path: ViewPath) -> Option<&mut DirView> {
+        let Window::Main { panes } = self.windows.get_mut(&view_path.window_id)? else {
+            return None;
+        };
+        panes.get_mut(view_path.pane)
+    }
+
+    /// Open a directory.
+    fn open_dir(
+        &self,
+        path: Arc<Path>,
+        prefix: Option<Arc<str>>,
+        view_path: ViewPath,
+    ) -> Task<Message> {
+        ::smol::fs::read_dir(Arc::clone(&path))
+            .pipe(Task::future)
+            .map({
+                let path = Arc::clone(&path);
+                move |result| {
+                    result
+                        .map_err(|err| ::log::error!("culd not read {path:?}\n{err}"))
+                        .ok()
+                }
+            })
+            .and_then(move |read_dir| {
+                let prefix = prefix.clone();
+                read_dir
+                    .filter_map({
+                        let path = Arc::clone(&path);
+                        move |entry| {
+                            entry
+                                .map_err(|err| {
+                                    ::log::warn!("io error while reading directory {path:?}\n{err}")
+                                })
+                                .ok()
+                        }
+                    })
+                    .then(move |entry| {
+                        let prefix = prefix.clone();
+                        async move {
+                            let name = format!(
+                                "{prefix}{name}",
+                                prefix = prefix.as_deref().unwrap_or(""),
+                                name = entry.file_name().display()
+                            );
+                            let path = Arc::from(entry.path());
+                            Message::AddItem {
+                                item_path: ItemPath { view_path, path },
+                                item: pane::Item { name },
+                            }
+                        }
+                    })
+                    .pipe(Task::stream)
+            })
     }
 
     /// Get main application theme.
@@ -137,8 +231,18 @@ impl State {
             writeln!(::std::io::stdout().lock(), "{err}").expect("write to stdout should not fail")
         };
         match message {
-            Message::AddWindow(id, window) => {
-                self.windows.insert(id, window);
+            Message::AddDirWindow(window_id, path) => {
+                let (panes, pane) = pane_grid::State::new(pane::DirView::Empty);
+                self.windows.insert(window_id, Window::Main { panes });
+                self.open_dir(path, None, ViewPath { window_id, pane })
+            }
+            Message::AddEmptyWindow(id) => {
+                let (panes, _) = pane_grid::State::new(pane::DirView::Empty);
+                self.windows.insert(id, Window::Main { panes });
+                Task::none()
+            }
+            Message::AddSettingsWindow(id) => {
+                self.windows.insert(id, Window::Settings);
                 Task::none()
             }
             Message::RemoveWindow(id) => {
@@ -171,7 +275,7 @@ impl State {
                                 },
                                 ..window::Settings::default()
                             });
-                            task.map(|id| Message::AddWindow(id, Window::Settings))
+                            task.map(Message::AddSettingsWindow)
                         } else {
                             Task::batch(to_close)
                         }
@@ -233,78 +337,34 @@ impl State {
                 }
                 Task::none()
             }
+            Message::AddItem {
+                item_path: ItemPath { view_path, path },
+                item,
+            } => {
+                let Some(view) = self.get_dir_view_mut(view_path) else {
+                    ::log::warn!("could not resolve view path {view_path:?}");
+                    return Task::none();
+                };
+
+                match view {
+                    DirView::Empty => {
+                        *view = DirView::Dir {
+                            items: BTreeMap::from_iter([(path, item)]),
+                        }
+                    }
+                    DirView::Dir { items, .. } => {
+                        items.insert(path, item);
+                    }
+                }
+
+                Task::none()
+            }
         }
     }
 
     /// View application
     fn view(&self, id: window::Id) -> Element<'_, Message> {
-        let ty = self.windows.get(&id).unwrap_or(&Window::Main);
-        match ty {
-            Window::Main => widget::Column::new()
-                .padding(5)
-                .spacing(3)
-                .push(widget::space::vertical())
-                .push(widget::rule::horizontal(2))
-                .push(
-                    widget::Row::new()
-                        .align_y(Center)
-                        .spacing(0)
-                        .push(widget::space::horizontal())
-                        .push(widget::text(format!("profile: {}", self.cli.profile,))),
-                )
-                .into(),
-            Window::Settings => widget::Column::new()
-                .padding(5)
-                .spacing(3)
-                .align_x(Center)
-                .push(widget::space::vertical())
-                .push(
-                    widget::Column::new()
-                        .spacing(3)
-                        .push(
-                            widget::Row::new()
-                                .align_y(Center)
-                                .spacing(3)
-                                .push("Theme")
-                                .push(
-                                    widget::mouse_area(
-                                        widget::pick_list(
-                                            ThemeValueEnum::value_variants(),
-                                            Some(self.settings.theme),
-                                            Message::SetTheme,
-                                        )
-                                        .padding(3),
-                                    )
-                                    .on_scroll(Message::ThemeScroll),
-                                ),
-                        )
-                        .pipe(widget::container)
-                        .style(widget::container::bordered_box)
-                        .padding(5),
-                )
-                .push(widget::space::vertical())
-                .push(
-                    widget::Row::new()
-                        .spacing(3)
-                        .push(
-                            widget::button("Save")
-                                .padding(3)
-                                .on_press(Message::SaveSettings)
-                                .style(widget::button::success),
-                        )
-                        .push(
-                            widget::button("Load")
-                                .padding(3)
-                                .on_press(Message::ReloadSettigns),
-                        )
-                        .pipe(widget::container)
-                        .style(widget::container::bordered_box)
-                        .padding(5)
-                        .pipe(widget::container)
-                        .width(Fill)
-                        .align_x(Alignment::End),
-                )
-                .into(),
-        }
+        let ty = self.windows.get(&id).unwrap_or(&Window::Settings);
+        ty.view(&self.cli, &self.settings).into()
     }
 }
